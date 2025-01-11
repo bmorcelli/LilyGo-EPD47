@@ -1,11 +1,19 @@
 #ifndef __EPD_TRANSLATE_H
 #define __EPD_TRANSLATE_H
 
-#include <Arduino.h>
+// #include "helvetica8.h"
+// #include "helvetica16.h"
+// #include "helvetica24.h"
+
 #include <epd_driver.h>
+#include <Arduino.h>
 #include "utilities.h"
-#include "firasans.h"
 #include <SPI.h>
+#include "helvetica8.h"
+#include "helvetica16.h"
+#include "helvetica24.h"
+#include "firasans.h"
+
 
 #define TFT_BLACK       0x0000      /*   0,   0,   0 */
 #define TFT_NAVY        0x000F      /*   0,   0, 128 */
@@ -34,11 +42,13 @@ class EPD_translate {
     bool changed=false;
     bool callBackOn=false;
     bool busy=false;
+    const GFXfont * font;
     uint8_t fg_color;
     uint8_t bg_color;
     int32_t cursor_x;
     int32_t cursor_y;
     uint8_t *framebuffer = NULL;
+    uint8_t *frameblank = NULL;
     inline uint8_t getColorFrom16(uint16_t c) {
         uint32_t r = ((c >> 11) & 0x1F)*254/31;
         uint32_t g = ((c >> 5) & 0x3F)*254/63;
@@ -55,8 +65,8 @@ class EPD_translate {
                 Serial.println("Pushing image...");
                 epd_poweron();
                 //epd_clear();
-                epd_clear_area_cycles(epd_full_screen(), 3, 50);
-                delay(50);
+                epd_clear_area_cycles(epd_full_screen(), 1, 50);
+                //delay(50);
                 self->_epdPushImage();  // Função do objeto
                 epd_poweroff();
                 self->changed = false;
@@ -72,12 +82,15 @@ class EPD_translate {
     uint8_t textcolor = fg_color;
     uint8_t textbgcolor = bg_color;
     inline void init() { 
+        frameblank = (uint8_t *)ps_calloc(sizeof(uint8_t), EPD_WIDTH * EPD_HEIGHT / 2); 
         framebuffer = (uint8_t *)ps_calloc(sizeof(uint8_t), EPD_WIDTH * EPD_HEIGHT / 2);
         if (!framebuffer) {
             Serial.println("Alloc to PSRAM memory failed !!!");
             return; // stops the whole thing, preventing crash
         } Serial.println("Alloc to PSRAM Success");
         memset(framebuffer, 0xFF, EPD_WIDTH * EPD_HEIGHT / 2); 
+        memset(frameblank, 0xFF, EPD_WIDTH * EPD_HEIGHT / 2); 
+        font=&helvetica8;
         epd_init();
         epd_poweron();
         epd_clear();
@@ -104,14 +117,23 @@ class EPD_translate {
         } 
     }
     inline void _epdPushImage() {
+        // size_t len=EPD_WIDTH * EPD_HEIGHT / 2;
+        // for(size_t i = 0; i<len; i++)  frameblank[len-1-i] = framebuffer[i];
+
+        // memset(framebuffer, 0xFF, len); 
+        // epd_draw_image(epd_full_screen(), framebuffer,BLACK_ON_WHITE);
+        // epd_draw_image(epd_full_screen(), frameblank,BLACK_ON_WHITE);
+        
+
+        epd_draw_image(epd_full_screen(), frameblank,BLACK_ON_WHITE);
         epd_draw_image(epd_full_screen(), framebuffer,BLACK_ON_WHITE);
-        //epd_draw_grayscale_image(epd_full_screen(), framebuffer);
+        epd_draw_image(epd_full_screen(), framebuffer,BLACK_ON_WHITE);
         memset(framebuffer, 0xFF, EPD_WIDTH * EPD_HEIGHT / 2);
     };
     inline void epdPushImage() {
         Serial.println("Pushing image manually...");
         epd_poweron();
-        epd_clear_area_cycles(epd_full_screen(), 3, 50);
+        epd_clear_area_cycles(epd_full_screen(), 1, 50);
         delay(50);
         _epdPushImage();  // Função do objeto
         epd_poweroff();
@@ -126,16 +148,22 @@ class EPD_translate {
     inline void setTextColor(uint16_t fgcolor) { fg_color = getColorFrom16(fgcolor); textcolor=fg_color; }; /*Attention point, crazy conversion*/
     inline void setCursor(uint32_t x, uint32_t y) { cursor_x=x; cursor_y=y; };
 
-    inline void setTextSize(uint32_t c) { /*Not implemented in EPD? */ };
+    inline void setTextSize(uint32_t c) { 
+        if(c==1) font=&helvetica8;
+        if(c==2) font=&helvetica16;
+        if(c==3) font=&helvetica24;
+        if(c>0 && c<4) textsize=c;
+        else c=2;
+     };
     inline uint32_t getCursorY() { return cursor_y; };
     inline uint32_t getCursorX() { return cursor_x; };
 
     inline void print(String t) { 
         busy=1;
         int32_t y=0, x0=0, y0=0, x2=0,y2=0, w=0, h=0;
-        get_text_bounds((GFXfont *)&FiraSans, t.c_str(), &x0, &y0, &x2, &y2, &w, &h, NULL);
+        get_text_bounds((GFXfont *)font, t.c_str(), &x0, &y0, &x2, &y2, &w, &h, NULL);
         y = cursor_y+33;
-        write_string((GFXfont *)&FiraSans, t.c_str(), &cursor_x, &y, framebuffer); 
+        write_string((GFXfont *)font, t.c_str(), &cursor_x, &y, framebuffer); 
         if(cursor_x>EPD_WIDTH) { 
             cursor_x=0;
         }        
@@ -145,9 +173,9 @@ class EPD_translate {
     inline void print(char c){ 
         busy=1;
         int32_t y=0, x0=0, y0=0, x2=0,y2=0, w=0, h=0;
-        get_text_bounds((GFXfont *)&FiraSans, String(c).c_str(), &x0, &y0, &x2, &y2, &w, &h, NULL);
+        get_text_bounds((GFXfont *)font, String(c).c_str(), &x0, &y0, &x2, &y2, &w, &h, NULL);
         y = cursor_y+33;
-        write_string((GFXfont *)&FiraSans, &c, &cursor_x, &y, framebuffer); 
+        write_string((GFXfont *)font, &c, &cursor_x, &y, framebuffer); 
         if(cursor_x>EPD_WIDTH) { 
             cursor_x=0;
             cursor_y+=33;
@@ -158,10 +186,10 @@ class EPD_translate {
     inline void println(String t="") { 
         busy=1;
         int32_t y=0, x0=0, y0=0, x2=0,y2=0, w=0, h=0;
-        get_text_bounds((GFXfont *)&FiraSans, t.c_str(), &x0, &y0, &x2, &y2, &w, &h, NULL);
+        get_text_bounds((GFXfont *)font, t.c_str(), &x0, &y0, &x2, &y2, &w, &h, NULL);
         y = cursor_y+33;
         cursor_y=y;
-        write_string((GFXfont *)&FiraSans, String(t).c_str(), &cursor_x, &y, framebuffer); 
+        write_string((GFXfont *)font, String(t).c_str(), &cursor_x, &y, framebuffer); 
         if(cursor_x>EPD_WIDTH) { 
             cursor_x=0;
             cursor_y+=33;
@@ -226,9 +254,9 @@ class EPD_translate {
     inline void drawString(String t,int x,int y) {
         busy=1;
         int32_t x0=0, y0=0, x2=0,y2=0, w=0, h=0;
-        get_text_bounds((GFXfont *)&FiraSans, t.c_str(), &x0, &y0, &x2, &y2, &w, &h, NULL);
+        get_text_bounds((GFXfont *)font, t.c_str(), &x0, &y0, &x2, &y2, &w, &h, NULL);
         y = y+h;
-        write_string((GFXfont *)&FiraSans, t.c_str(), &x, &y, framebuffer);
+        write_string((GFXfont *)font, t.c_str(), &x, &y, framebuffer);
         busy=0;
         changed=true;
     };
@@ -236,11 +264,11 @@ class EPD_translate {
     inline void drawRightString(String t,int x,int y,uint32_t f) {
         busy=1;
         int32_t x0=0, y0=0, x2=0,y2=0, w=0, h=0;
-        get_text_bounds((GFXfont *)&FiraSans, t.c_str(), &x0, &y0, &x2, &y2, &w, &h, NULL);
+        get_text_bounds((GFXfont *)font, t.c_str(), &x0, &y0, &x2, &y2, &w, &h, NULL);
         x = x-w;
         y = y+h;
         //Serial.printf("RightString x=%d, y=%d, x0=%d, y0=%d, x2=%d, y2=%d, w=%d, h=%d\n\n",x, y, x0, y0, x2, y2, w, h);
-        write_string((GFXfont *)&FiraSans, t.c_str(), &x, &y, framebuffer);
+        write_string((GFXfont *)font, t.c_str(), &x, &y, framebuffer);
         busy=0;
         changed=true;
      };
@@ -248,18 +276,21 @@ class EPD_translate {
     inline void drawCentreString(String t,int x,int y,uint32_t f) { 
         busy=1;
         int32_t x0=0, y0=0, x2=0,y2=0, w=0, h=0;
-        get_text_bounds((GFXfont *)&FiraSans, t.c_str(), &x0, &y0, &x2, &y2, &w, &h, NULL);
+        get_text_bounds((GFXfont *)font, t.c_str(), &x0, &y0, &x2, &y2, &w, &h, NULL);
         x = x-w/2;
         y = y+h;
         //Serial.printf("CentreString x=%d, y=%d, x0=%d, y0=%d, x2=%d, y2=%d, w=%d, h=%d\n\n",x, y, x0, y0, x2, y2, w, h);
-        write_string((GFXfont *)&FiraSans, t.c_str(), &x, &y, framebuffer);
+        write_string((GFXfont *)font, t.c_str(), &x, &y, framebuffer);
         busy=0;
         changed=true;
      };
 
      inline void drawChar(char c, int x, int y) { 
         busy=1;
-        write_string((GFXfont *)&FiraSans, String(c).c_str(), &x, &y, framebuffer);
+        int32_t x0=0, y0=0, x2=0,y2=0, w=0, h=0;
+        get_text_bounds((GFXfont *)font, String(c).c_str(), &x0, &y0, &x2, &y2, &w, &h, NULL);
+        y = y+h;
+        write_string((GFXfont *)font, String(c).c_str(), &x, &y, framebuffer);
         busy=0;
         changed=true;
     };
