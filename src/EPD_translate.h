@@ -1,18 +1,13 @@
 #ifndef __EPD_TRANSLATE_H
 #define __EPD_TRANSLATE_H
 
-// #include "helvetica8.h"
-// #include "helvetica16.h"
-// #include "helvetica24.h"
-
 #include <epd_driver.h>
 #include <Arduino.h>
 #include "utilities.h"
 #include <SPI.h>
-#include "helvetica8.h"
-#include "helvetica16.h"
-#include "helvetica24.h"
-#include "firasans.h"
+#include "fonts/helvetica8.h"
+#include "fonts/helvetica16.h"
+#include "fonts/helvetica24.h"
 
 
 #define TFT_BLACK       0x0000      /*   0,   0,   0 */
