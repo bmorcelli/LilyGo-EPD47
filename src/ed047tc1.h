@@ -96,6 +96,9 @@ extern "C" {
     #error "Unknown SOC"
 #endif
 
+#ifndef IRAM_ATTR
+#define IRAM_ATTR _SECTION_ATTR_IMPL(".iram1", __COUNTER__)
+#endif
 /******************************************************************************/
 /***        type definitions                                                ***/
 /******************************************************************************/
