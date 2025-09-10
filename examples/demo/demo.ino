@@ -55,6 +55,10 @@ uint32_t interval = 0;
 int vref = 1100;
 char buf[128];
 
+uint32_t touch_loop_interval = 0;
+bool found_rtc = false;
+
+
 struct _point {
     uint8_t buttonID;
     int32_t x;
@@ -179,9 +183,12 @@ void setup()
 
 
     Wire.begin(BOARD_SDA, BOARD_SCL);
-    Wire.beginTransmission(PCF8563_SLAVE_ADDRESS);
-    if (Wire.endTransmission() == 0) {
-        rtc.begin(Wire, PCF8563_SLAVE_ADDRESS, BOARD_SDA, BOARD_SCL);
+
+    rtc.begin(Wire);
+
+    Wire.beginTransmission(0x51);
+    found_rtc = Wire.endTransmission() == 0;
+    if (found_rtc) {
         // rtc.setDateTime(2022, 6, 30, 0, 0, 0);
         writeln((GFXfont *)&FiraSans, "➸ RTC is online  😀 \n", &cursor_x, &cursor_y, NULL);
     } else {
@@ -300,7 +307,6 @@ void loop()
         struct tm timeinfo;
         // Get the time C library structure
         rtc.getDateTime(&timeinfo);
-
         strftime(buf, 64, "➸ %b %d %Y %H:%M:%S", &timeinfo);
         writeln((GFXfont *)&FiraSans, buf, &cursor_x, &cursor_y, NULL);
 

@@ -1,10 +1,9 @@
 # 1. Firmware
 
-1. `T5-4.7-plus_no_touch_firmware.bin` T5-4.7 ESP32S3 no touch Test
-2. `T5-4.7-plus_touch_firmware.bin` T5-4.7 ESP32S3 with touch Test
-3. `T5-4.7_firmware.bin`  T5-4.7 ESP32  Test firmware
+1. `T5-ePaper-S3_demo_250901.bin` T5-4.7 ESP32S3 version touch or not touch
+2. `T5-4.7_firmware.bin`  T5-4.7 ESP32  Test firmware
 
-# 2. Tools Dowload
+# 2. Tools Download
 
 - [Flash_download_tool](https://www.espressif.com.cn/sites/default/files/tools/flash_download_tool_3.9.5_0.zip)
 
