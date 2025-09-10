@@ -55,8 +55,8 @@ class EPD_translate {
 
     static void _pushImage(void *parameter) {
         EPD_translate *self = static_cast<EPD_translate *>(parameter);  // Converte para objeto
-        while (true) { 
-            if (self->changed==true && self->busy==false) { 
+        while (true) {
+            if (self->changed==true && self->busy==false) {
                 Serial.println("Pushing image...");
                 epd_poweron();
                 //epd_clear();
@@ -66,7 +66,7 @@ class EPD_translate {
                 epd_poweroff();
                 self->changed = false;
                 vTaskDelay(500 / portTICK_PERIOD_MS);
-            } 
+            }
             //else Serial.println("Didn't Push any image...");
             vTaskDelay(500 / portTICK_PERIOD_MS);
         }
@@ -76,15 +76,15 @@ class EPD_translate {
     uint32_t textsize=1; /*where is the text size in EPD???*/
     uint8_t textcolor = fg_color;
     uint8_t textbgcolor = bg_color;
-    inline void init() { 
-        frameblank = (uint8_t *)ps_calloc(sizeof(uint8_t), EPD_WIDTH * EPD_HEIGHT / 2); 
+    inline void init() {
+        frameblank = (uint8_t *)ps_calloc(sizeof(uint8_t), EPD_WIDTH * EPD_HEIGHT / 2);
         framebuffer = (uint8_t *)ps_calloc(sizeof(uint8_t), EPD_WIDTH * EPD_HEIGHT / 2);
         if (!framebuffer) {
             Serial.println("Alloc to PSRAM memory failed !!!");
             return; // stops the whole thing, preventing crash
         } Serial.println("Alloc to PSRAM Success");
-        memset(framebuffer, 0xFF, EPD_WIDTH * EPD_HEIGHT / 2); 
-        memset(frameblank, 0xFF, EPD_WIDTH * EPD_HEIGHT / 2); 
+        memset(framebuffer, 0xFF, EPD_WIDTH * EPD_HEIGHT / 2);
+        memset(frameblank, 0xFF, EPD_WIDTH * EPD_HEIGHT / 2);
         font=&helvetica8;
         epd_init();
         epd_poweron();
@@ -101,7 +101,7 @@ class EPD_translate {
         this,               // Task parameters
         2,                  // Task priority (0 to 3), loopTask has priority 2.
         &taskHandle            // Task handle (not used)
-        ); 
+        );
         Serial.println("Task Started");
     }
     inline void stopCallback() {
@@ -109,16 +109,16 @@ class EPD_translate {
             vTaskDelete(taskHandle);
             Serial.println("Task stopped.");
             taskHandle = NULL;
-        } 
+        }
     }
     inline void _epdPushImage() {
         // size_t len=EPD_WIDTH * EPD_HEIGHT / 2;
         // for(size_t i = 0; i<len; i++)  frameblank[len-1-i] = framebuffer[i];
 
-        // memset(framebuffer, 0xFF, len); 
+        // memset(framebuffer, 0xFF, len);
         // epd_draw_image(epd_full_screen(), framebuffer,BLACK_ON_WHITE);
         // epd_draw_image(epd_full_screen(), frameblank,BLACK_ON_WHITE);
-        
+
 
         epd_draw_image(epd_full_screen(), frameblank,BLACK_ON_WHITE);
         epd_draw_image(epd_full_screen(), framebuffer,BLACK_ON_WHITE);
@@ -143,7 +143,7 @@ class EPD_translate {
     inline void setTextColor(uint16_t fgcolor) { fg_color = getColorFrom16(fgcolor); textcolor=fg_color; }; /*Attention point, crazy conversion*/
     inline void setCursor(uint32_t x, uint32_t y) { cursor_x=x; cursor_y=y; };
 
-    inline void setTextSize(uint32_t c) { 
+    inline void setTextSize(uint32_t c) {
         if(c==1) font=&helvetica8;
         if(c==2) font=&helvetica16;
         if(c==3) font=&helvetica24;
@@ -153,82 +153,82 @@ class EPD_translate {
     inline uint32_t getCursorY() { return cursor_y; };
     inline uint32_t getCursorX() { return cursor_x; };
 
-    inline void print(String t) { 
+    inline void print(String t) {
         busy=1;
         int32_t y=0, x0=0, y0=0, x2=0,y2=0, w=0, h=0;
         get_text_bounds((GFXfont *)font, t.c_str(), &x0, &y0, &x2, &y2, &w, &h, NULL);
         y = cursor_y+33;
-        write_string((GFXfont *)font, t.c_str(), &cursor_x, &y, framebuffer); 
-        if(cursor_x>EPD_WIDTH) { 
+        write_string((GFXfont *)font, t.c_str(), &cursor_x, &y, framebuffer);
+        if(cursor_x>EPD_WIDTH) {
             cursor_x=0;
-        }        
+        }
         busy=0;
         changed=true;
-    }; 
-    inline void print(char c){ 
+    };
+    inline void print(char c){
         busy=1;
         int32_t y=0, x0=0, y0=0, x2=0,y2=0, w=0, h=0;
         get_text_bounds((GFXfont *)font, String(c).c_str(), &x0, &y0, &x2, &y2, &w, &h, NULL);
         y = cursor_y+33;
-        write_string((GFXfont *)font, &c, &cursor_x, &y, framebuffer); 
-        if(cursor_x>EPD_WIDTH) { 
+        write_string((GFXfont *)font, &c, &cursor_x, &y, framebuffer);
+        if(cursor_x>EPD_WIDTH) {
             cursor_x=0;
             cursor_y+=33;
         }
         busy=0;
         changed=true;
-    }; 
-    inline void println(String t="") { 
+    };
+    inline void println(String t="") {
         busy=1;
         int32_t y=0, x0=0, y0=0, x2=0,y2=0, w=0, h=0;
         get_text_bounds((GFXfont *)font, t.c_str(), &x0, &y0, &x2, &y2, &w, &h, NULL);
         y = cursor_y+33;
         cursor_y=y;
-        write_string((GFXfont *)font, String(t).c_str(), &cursor_x, &y, framebuffer); 
-        if(cursor_x>EPD_WIDTH) { 
+        write_string((GFXfont *)font, String(t).c_str(), &cursor_x, &y, framebuffer);
+        if(cursor_x>EPD_WIDTH) {
             cursor_x=0;
             cursor_y+=33;
-        }        
+        }
         busy=0;
         //Serial.printf("println cursor_x=%d, y=%d, x0=%d, y0=%d, x2=%d, y2=%d, w=%d, h=%d\n", cursor_x, y, x0, y0, x2, y2, w, h);
         changed=true;
     };
-    inline void fillScreen(uint16_t c) { 
+    inline void fillScreen(uint16_t c) {
         busy=1;
         epd_clear_area_cycles(epd_full_screen(), 1, 50);
         memset(framebuffer, 0xFF, EPD_WIDTH * EPD_HEIGHT / 2);
-        if(getColorFrom16(c)<0xFD) fillRect(0,0, EPD_WIDTH, EPD_HEIGHT, getColorFrom16(c)); 
+        if(getColorFrom16(c)<0xFD) fillRect(0,0, EPD_WIDTH, EPD_HEIGHT, getColorFrom16(c));
         busy=0;
         changed=false;
     };
 
-    inline void fillRect(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint16_t c) { 
+    inline void fillRect(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint16_t c) {
         busy=1;
-        epd_fill_rect(x, y, w, h, getColorFrom16(c), framebuffer); 
+        epd_fill_rect(x, y, w, h, getColorFrom16(c), framebuffer);
         busy=0;
         changed=true;
     };
-    inline void drawRect(uint32_t x,uint32_t y,uint32_t w,uint32_t h,uint16_t c) { 
+    inline void drawRect(uint32_t x,uint32_t y,uint32_t w,uint32_t h,uint16_t c) {
         busy=1;
-        epd_draw_rect(x, y, w, h, getColorFrom16(c), framebuffer); 
+        epd_draw_rect(x, y, w, h, getColorFrom16(c), framebuffer);
         busy=0;
         changed=true;
     };
-    inline void drawRoundRect(uint32_t x,uint32_t y,uint32_t w,uint32_t h,uint32_t r,uint16_t c) { 
+    inline void drawRoundRect(uint32_t x,uint32_t y,uint32_t w,uint32_t h,uint32_t r,uint16_t c) {
         busy=1;
-        epd_draw_rect(x, y, w, h, getColorFrom16(c), framebuffer); /*No round rect for now*/ 
+        epd_draw_rect(x, y, w, h, getColorFrom16(c), framebuffer); /*No round rect for now*/
         busy=0;
         changed=true;
     };
-    inline void fillRoundRect(uint32_t x,uint32_t y,uint32_t w,uint32_t h,uint32_t r,uint16_t c) { 
+    inline void fillRoundRect(uint32_t x,uint32_t y,uint32_t w,uint32_t h,uint32_t r,uint16_t c) {
         busy=1;
-        epd_fill_rect(x, y, w, h, getColorFrom16(c), framebuffer); /*No round rect for now*/ 
+        epd_fill_rect(x, y, w, h, getColorFrom16(c), framebuffer); /*No round rect for now*/
         busy=0;
         changed=true;
     };
-    inline void fillSmoothRoundRect(uint32_t x,uint32_t y,uint32_t w,uint32_t h,uint32_t r,uint16_t c) { 
+    inline void fillSmoothRoundRect(uint32_t x,uint32_t y,uint32_t w,uint32_t h,uint32_t r,uint16_t c) {
         busy=1;
-        epd_fill_rect(x, y, w, h, getColorFrom16(c), framebuffer); /*No smooth rect for now*/ 
+        epd_fill_rect(x, y, w, h, getColorFrom16(c), framebuffer); /*No smooth rect for now*/
         busy=0;
         changed=true;
     };
@@ -239,14 +239,14 @@ class EPD_translate {
         changed=true;
     };
 
-    inline void drawLine(uint32_t x0, uint32_t y0, uint32_t x1, uint32_t y1, uint16_t c) { 
+    inline void drawLine(uint32_t x0, uint32_t y0, uint32_t x1, uint32_t y1, uint16_t c) {
         busy=1;
-        epd_draw_line(x0, y0, x1, y1,  getColorFrom16(c), framebuffer); 
+        epd_draw_line(x0, y0, x1, y1,  getColorFrom16(c), framebuffer);
         busy=0;
         changed=true;
         };
 
-    inline void drawString(String t,int x,int y) {
+    inline void drawString(String t,int32_t x,int32_t y) {
         busy=1;
         int32_t x0=0, y0=0, x2=0,y2=0, w=0, h=0;
         get_text_bounds((GFXfont *)font, t.c_str(), &x0, &y0, &x2, &y2, &w, &h, NULL);
@@ -256,7 +256,7 @@ class EPD_translate {
         changed=true;
     };
 
-    inline void drawRightString(String t,int x,int y,uint32_t f) {
+    inline void drawRightString(String t,int32_t x,int32_t y,uint32_t f) {
         busy=1;
         int32_t x0=0, y0=0, x2=0,y2=0, w=0, h=0;
         get_text_bounds((GFXfont *)font, t.c_str(), &x0, &y0, &x2, &y2, &w, &h, NULL);
@@ -268,7 +268,7 @@ class EPD_translate {
         changed=true;
      };
 
-    inline void drawCentreString(String t,int x,int y,uint32_t f) { 
+    inline void drawCentreString(String t,int32_t x,int32_t y,uint32_t f) {
         busy=1;
         int32_t x0=0, y0=0, x2=0,y2=0, w=0, h=0;
         get_text_bounds((GFXfont *)font, t.c_str(), &x0, &y0, &x2, &y2, &w, &h, NULL);
@@ -280,7 +280,7 @@ class EPD_translate {
         changed=true;
      };
 
-     inline void drawChar(char c, int x, int y) { 
+     inline void drawChar(char c, int32_t x, int32_t y) {
         busy=1;
         int32_t x0=0, y0=0, x2=0,y2=0, w=0, h=0;
         get_text_bounds((GFXfont *)font, String(c).c_str(), &x0, &y0, &x2, &y2, &w, &h, NULL);
