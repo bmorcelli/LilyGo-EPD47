@@ -364,8 +364,8 @@ void setup()
     WiFi.begin(ssid, password);
     sprintf(buf, "Connecting to %s", ssid);
     DBG_OUTPUT_PORT.println(buf);
-    int32_t cursor_x = line1Area.x;
-    int32_t cursor_y = line1Area.y + FiraSans.advance_y + FiraSans.descender;
+    int cursor_x = line1Area.x;
+    int cursor_y = line1Area.y + FiraSans.advance_y + FiraSans.descender;
     epd_clear_area(line1Area);
     writeln((GFXfont *)&FiraSans, buf, &cursor_x, &cursor_y, NULL);
 

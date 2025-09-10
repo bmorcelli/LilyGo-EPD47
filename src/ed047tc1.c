@@ -10,7 +10,6 @@
 #include <xtensa/core-macros.h>
 
 #include <string.h>
-#include <hal/gpio_ll.h>
 
 /******************************************************************************/
 /***        macro definitions                                               ***/
@@ -56,12 +55,14 @@ static epd_config_register_t config_reg;
  */
 inline static void fast_gpio_set_hi(gpio_num_t gpio_num)
 {
-    GPIO.out_w1ts = (1 << gpio_num);
+    // GPIO.out_w1ts = (1 << gpio_num);
+    gpio_set_level(gpio_num,1);
 }
 
 inline static void fast_gpio_set_lo(gpio_num_t gpio_num)
 {
-    GPIO.out_w1tc = (1 << gpio_num);
+    // GPIO.out_w1tc = (1 << gpio_num);
+    gpio_set_level(gpio_num,0);
 }
 
 inline static void IRAM_ATTR push_cfg_bit(bool bit)
@@ -115,7 +116,18 @@ void epd_base_init(uint32_t epd_row_width)
     config_reg.ep_mode = false;
     config_reg.ep_output_enable = false;
 
+    // config_reg.ep_latch_enable = 1;
+    // config_reg.power_disable = true;
+    // config_reg.pos_power_enable = 1;
+    // config_reg.neg_power_enable = 1;
+    // config_reg.ep_stv = true;
+    // config_reg.ep_scan_direction = true;
+    // config_reg.ep_mode = 1;
+    // config_reg.ep_output_enable = 1;
+
+
     /* Power Control Output/Off */
+    gpio_reset_pin(CFG_CLK);
     gpio_set_direction(CFG_DATA, GPIO_MODE_OUTPUT);
     gpio_set_direction(CFG_CLK, GPIO_MODE_OUTPUT);
     gpio_set_direction(CFG_STR, GPIO_MODE_OUTPUT);
@@ -123,6 +135,25 @@ void epd_base_init(uint32_t epd_row_width)
 
     push_cfg(&config_reg);
 
+    // while (1)
+    // {
+    // // // GPIO.out_w1ts = (1 << CFG_DATA);
+    // // // GPIO.out_w1ts = (1 << CFG_CLK);
+    // // // GPIO.out_w1ts = (1 << CFG_STR);
+    // fast_gpio_set_hi(CFG_DATA);
+    // fast_gpio_set_hi(CFG_CLK);
+    // fast_gpio_set_hi(CFG_STR);
+    // delay(200);
+    // fast_gpio_set_lo(CFG_DATA);
+    // fast_gpio_set_lo(CFG_CLK);
+    // fast_gpio_set_lo(CFG_STR);
+    // // // GPIO.out_w1tc = (1 << CFG_DATA);
+    // // // GPIO.out_w1tc = (1 << CFG_CLK);
+    // // // GPIO.out_w1tc = (1 << CFG_STR);
+    // delay(200);
+    // //     /* code */
+    // }
+    
     // Setup I2S
     i2s_bus_config i2s_config;
     // add an offset off dummy bytes to allow for enough timing headroom
@@ -214,7 +245,7 @@ static inline void latch_row()
     push_cfg(&config_reg);
 }
 
-void  epd_skip()
+void IRAM_ATTR epd_skip()
 {
 #if defined(CONFIG_EPD_DISPLAY_TYPE_ED097TC2)
     pulse_ckv_ticks(2, 2, false);
@@ -224,7 +255,7 @@ void  epd_skip()
 #endif
 }
 
-void  epd_output_row(uint32_t output_time_dus)
+void IRAM_ATTR epd_output_row(uint32_t output_time_dus)
 {
     while (i2s_is_busy());
 
@@ -246,12 +277,12 @@ void epd_end_frame()
     pulse_ckv_us(1, 1, true);
 }
 
-void  epd_switch_buffer()
+void IRAM_ATTR epd_switch_buffer()
 {
     i2s_switch_buffer();
 }
 
-uint8_t *  epd_get_current_buffer()
+uint8_t * IRAM_ATTR epd_get_current_buffer()
 {
     return (uint8_t *)i2s_get_current_buffer();
 }
